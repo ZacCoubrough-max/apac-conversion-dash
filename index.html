@@ -511,7 +511,12 @@
       const weekPayload=await weekRes.json();
       const weeks=Array.isArray(weekPayload.weeks)?weekPayload.weeks.map(Number).filter(Number.isFinite):[];
       if(!weeks.length)throw new Error('Worker returned no available weeks');
-      const dataRes=await fetch(`${WORKER}/api/products?market=${encodeURIComponent(market)}&weeks=${weeks.join(',')}&format=csv`,{cache:'no-store',signal});
+      // The dashboard only needs the latest four data weeks: the current
+      // week plus the three preceding weeks for WOW and market comparison.
+      // Limiting the request prevents the Worker exceeding its memory limit
+      // when the source sheet contains a long product history.
+      const requestedWeeks=weeks.sort((a,b)=>a-b).slice(-4);
+      const dataRes=await fetch(`${WORKER}/api/products?market=${encodeURIComponent(market)}&weeks=${requestedWeeks.join(',')}&format=csv`,{cache:'no-store',signal});
       if(!dataRes.ok)throw new Error(`Worker product request returned HTTP ${dataRes.status}`);
       return dataRes.text();
     }
