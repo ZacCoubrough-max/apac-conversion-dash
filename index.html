@@ -145,6 +145,7 @@
     @media(max-width:1050px){.wrap{padding:20px 24px}.topbar-inner{padding:16px 24px}.topbar::after{left:24px;right:24px}}
     @media(max-width:650px){.wrap{padding:12px}.topbar-inner{padding:13px 14px}.topbar::after{left:14px;right:14px}.jd-logo{height:31px}.brand{gap:8px}.kpi-value{font-size:25px}.controls{padding:14px}.panel-body{padding:14px}}
   .method-notes{padding:0 20px 18px;color:#fff;font-size:12px;line-height:1.65}.method-notes summary{cursor:pointer;font-weight:700}.method-notes p{max-width:1100px}.evidence{display:inline-block;padding:5px 7px;border-radius:4px;font-size:11px;white-space:nowrap}.evidence-1{background:#3e3030;color:#fff}.evidence-2{background:#423b22;color:#fff}.evidence-3{background:#173d30;color:#fff}.persistent{color:#ffcb75;font-weight:700}.product-table{min-width:1600px}
+.report-tabs{display:flex;gap:8px;border-bottom:1px solid #333;margin:0 0 20px;padding-bottom:12px}.report-tabs button{font:inherit;font-size:13px;font-weight:700;padding:12px 18px;background:#181818;color:#fff;border:1px solid #444;border-radius:5px;cursor:pointer}.report-tabs button[aria-selected="true"]{background:#fff;color:#111;border-color:#fff}.report-tabs button:focus-visible,.guide-close button:focus-visible{outline:3px solid #8fb7ff;outline-offset:3px}#dashboardPanel[hidden],#guidePanel[hidden]{display:none}.guide-intro{padding:18px 0 26px;color:#fff}.guide-eyebrow{font-size:11px;letter-spacing:.12em;color:#b6d1ff}.guide-intro h2{font-size:clamp(24px,3vw,38px);line-height:1.2;margin:12px 0}.guide-intro p{font-size:14px;line-height:1.7}.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.guide-card{padding:24px;margin-bottom:16px;color:#fff;line-height:1.75;font-size:13px}.guide-card h3{margin:0 0 14px;font-size:18px;line-height:1.4}.guide-card p{margin:12px 0}.guide-card ul,.guide-steps{padding-left:23px}.guide-card li{margin-bottom:12px}.guide-steps li{padding-left:8px}.guide-table-wrap{overflow:auto}.guide-table{width:100%;border-collapse:collapse;font-size:12px}.guide-table th,.guide-table td{padding:13px 12px;text-align:left;border-bottom:1px solid #333;vertical-align:top}.guide-table th{color:#fff}.guide-table td:first-child{font-weight:700;white-space:nowrap}.guide-close{padding:6px 0 30px}@media(max-width:800px){.guide-grid{grid-template-columns:1fr}.guide-card{padding:18px}.report-tabs button{padding:10px 12px}}
   </style>
 </head>
 <body>
@@ -160,6 +161,11 @@
   </header>
 
   <main class="wrap">
+    <nav class="report-tabs" role="tablist" aria-label="Report sections">
+      <button id="dashboardTab" role="tab" aria-selected="true" aria-controls="dashboardPanel" tabindex="0">Dashboard</button>
+      <button id="guideTab" role="tab" aria-selected="false" aria-controls="guidePanel" tabindex="-1">Guide · How to use</button>
+    </nav>
+    <div id="dashboardPanel" role="tabpanel" aria-labelledby="dashboardTab">
     <section class="controls">
       <div><label for="marketSelect">Market</label><select id="marketSelect"></select></div>
       <div><label for="weekSelect">Reporting week</label><select id="weekSelect" disabled><option>Loading…</option></select></div>
@@ -231,6 +237,31 @@
         </table>
       </div>
       <div class="table-foot"><span id="actionCount">0 actions</span><span>Saved in this browser · export to share</span></div>
+    </section>
+    </div>
+    <section id="guidePanel" role="tabpanel" aria-labelledby="guideTab" hidden>
+      <div class="guide-intro"><span class="guide-eyebrow">YOUR WEEKLY PRODUCT REVIEW</span><h2>From product signals to clear actions.</h2><p>A practical guide to what this report does, who should use it and how to make decisions from it.</p></div>
+      <div class="guide-grid">
+        <article class="panel guide-card"><h3>What is this dashboard?</h3><p>A weekly product performance report for Australia, New Zealand, Singapore, Malaysia and Thailand. It connects item views, add-to-carts, purchases and revenue to highlight products to grow, improve or investigate.</p><p>Performance is assessed within each individual market. The report uses WOW comparisons and the latest four available data weeks. It does not include LFL, brand or category analysis.</p></article>
+        <article class="panel guide-card"><h3>Who is it for?</h3><ul><li><strong>Ecommerce and trading teams:</strong> identify product priorities and own the weekly review.</li><li><strong>Merchandising and buying:</strong> investigate availability, price and assortment; agree where exposure can grow.</li><li><strong>Marketing:</strong> find candidates for additional visibility and check whether demand converts.</li><li><strong>Digital operations and analytics:</strong> validate tracking and investigate product-page, delivery or fulfilment signals.</li></ul></article>
+      </div>
+      <article class="panel guide-card"><h3>How to run your weekly review</h3><ol class="guide-steps"><li><strong>Confirm the data source.</strong> Check the pill at the top. “Live · Cloudflare” is the Worker feed; “Apps Script fallback” is the legacy feed. “Demo” uses sample products and must not be used for trading decisions. Read any feed warning before reviewing.</li><li><strong>Select a market and reporting week.</strong> Start with the latest complete week in the sheet. The newest available week may still be incomplete. Review the Current, Previous and Health baseline labels. With four weeks loaded, the latest week has up to three prior weeks for its baseline.</li><li><strong>Read the topline funnel.</strong> Review item views, ATC rate, conversion and revenue with their WOW changes. Click a KPI tile to see weekly results. Check whether weakness is broad across the market or concentrated in products.</li><li><strong>Open a Product Health status.</strong> Each tile opens up to 50 priority products. Click Meaning for the definition and current market rules. Counts are capped at 50; the tile also indicates the total where there are more products.</li><li><strong>Validate each priority.</strong> Check evidence strength, repeated weakness, volume, the reason and the estimated item gap. Search by Item ID or name, filter view volume and sort columns. Search also shows up to 50 results; low-data products are excluded.</li><li><strong>Agree a concrete action.</strong> Check stock and size coverage, price, promotion, launch timing, page content, delivery and tracking using your other tools. Use Add beside a product to record the action, owner, due date and notes.</li><li><strong>Review and follow up.</strong> Update action status next week. Export the Action Tracker CSV to share outcomes. Actions are saved in this browser and are not automatically shared with colleagues or synced across devices.</li></ol></article>
+      <article class="panel guide-card"><h3>What each status means</h3><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Status</th><th>What it suggests</th><th>First review</th></tr></thead><tbody>
+        <tr><td>Top Performer</td><td>Meaningful demand and strong conversion relative to the market.</td><td>Protect availability and assess additional exposure.</td></tr>
+        <tr><td>Hidden Gem</td><td>Strong conversion with less visibility than the market median.</td><td>Test more exposure and monitor the result.</td></tr>
+        <tr><td>Needs Help</td><td>Above-median visibility with weak conversion.</td><td>Review price, appeal, availability and promotion.</td></tr>
+        <tr><td>PDP Issue</td><td>High visibility with a weak ATC ratio; an investigation signal.</td><td>Check imagery, product information, price and sizes.</td></tr>
+        <tr><td>Cart Leakage</td><td>A low aggregate purchase-to-cart ratio.</td><td>Validate tracking, delivery, promotions and fulfilment.</td></tr>
+        <tr><td>Potential Issue</td><td>A sharp WOW decline or unusual funnel counts.</td><td>Validate data and recent trading changes first.</td></tr>
+        <tr><td>Steady</td><td>No configured performance or anomaly rule triggered.</td><td>Monitor; consider strategic importance separately.</td></tr>
+      </tbody></table></div><p>Rules have a priority order, so a product receives one status even if several signals apply. Products below the market traffic floor are excluded from status lists. A status is a review priority, not proof of a fault.</p></article>
+      <div class="guide-grid">
+        <article class="panel guide-card"><h3>Understand the measures</h3><ul><li><strong>ATC rate:</strong> items added to cart ÷ items viewed.</li><li><strong>Product conversion:</strong> items purchased ÷ items viewed.</li><li><strong>Cart ratio:</strong> items purchased ÷ items added to cart.</li><li><strong>WOW:</strong> volume/revenue changes are percentages; changes in rates are percentage points (pp).</li></ul><p>These are aggregate item counts, not unique people or matched customer journeys. Ratios can exceed 100%. The previous period is the preceding available week; check the displayed week numbers if a sheet week is missing.</p></article>
+        <article class="panel guide-card"><h3>Evidence and repeated weakness</h3><p><strong>Limited, Moderate and Stronger</strong> describe practical evidence strength using views, purchases and expected purchases at market median conversion. Hover over an evidence label for its detail. They do not express statistical certainty.</p><p><strong>“2+ weeks weak”</strong> identifies consecutive numbered weeks below the selected week's market thresholds. Missing or low-volume weeks break the streak. Status movement uses each week's available baseline, so it can also reflect benchmark changes.</p><p>Open “How to interpret product health, evidence and opportunity” on the Dashboard for the exact rules and current thresholds.</p></article>
+        <article class="panel guide-card"><h3>Estimated opportunity</h3><p>The estimated item gap is the extra purchased items needed to reach the market median conversion at the product's current view volume.</p><p>Estimated revenue opportunity multiplies that gap by the product's observed average selling price across the selected and baseline weeks. It requires at least three purchased items and positive revenue. A dash means no usable price estimate; the item gap is still visible.</p><p>This is a scenario for prioritising investigation, not a forecast or guaranteed lost sales. Different prices and product types may justify different conversion levels.</p></article>
+        <article class="panel guide-card"><h3>Use the report with context</h3><p>The sheet does not include stock, size coverage, categories, customer sessions or product-level campaign attribution. Confirm these elsewhere before deciding why a product is weak.</p><p>Historical context is limited: older selectable weeks have fewer prior weeks, and the earliest uses a provisional same-week market comparison. Week numbers are treated as one fiscal sequence; the report has no year selector.</p><p>If data fails, use the source warning and investigate the API before making decisions. Refresh retries the feed; Demo data lets you explore the report's controls.</p></article>
+      </div>
+      <div class="guide-close"><button class="btn" id="guideBackBtn">Open the dashboard →</button></div>
     </section>
   </main>
 
@@ -613,6 +644,14 @@
     $('actionModalClose').onclick=closeAction;$('actionModalDone').onclick=closeAction;$('saveActionBtn').onclick=saveAction;$('exportActionsBtn').onclick=exportActions;$('actionModal').onclick=e=>{if(e.target===$('actionModal'))closeAction()};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeClassification();closeKpiHistory();closeAction()}});
     document.querySelectorAll('th[data-sort]').forEach(th=>th.onclick=()=>{const k=th.dataset.sort;if(state.sortKey===k)state.sortDir*=-1;else{state.sortKey=k;state.sortDir=['id','name','status','movement'].includes(k)?1:-1}renderTable()});
+    function switchReportTab(view,focusTab=false){
+      const guide=view==='guide';$('dashboardPanel').hidden=guide;$('guidePanel').hidden=!guide;
+      for(const [id,selected] of [['dashboardTab',!guide],['guideTab',guide]]){const tab=$(id);tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1}
+      if(focusTab)$(guide?'guideTab':'dashboardTab').focus();
+    }
+    $('dashboardTab').onclick=()=>switchReportTab('dashboard');$('guideTab').onclick=()=>switchReportTab('guide');
+    $('guideBackBtn').onclick=()=>switchReportTab('dashboard',true);
+    for(const id of ['dashboardTab','guideTab'])$(id).onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const next=e.key==='Home'?'dashboard':e.key==='End'?'guide':id==='dashboardTab'?'guide':'dashboard';switchReportTab(next,true)}};
     loadLive();
   })();
   </script>
