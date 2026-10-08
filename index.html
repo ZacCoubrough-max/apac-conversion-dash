@@ -247,7 +247,7 @@
         <article class="panel guide-card"><h3>What is this dashboard?</h3><p>A weekly product performance report for Australia, New Zealand, Singapore, Malaysia and Thailand. It connects item views, add-to-carts, purchases and revenue to highlight products to grow, improve or investigate.</p><p>Performance is assessed within each individual market. The report uses WOW comparisons and the latest four available data weeks. It does not include LFL, brand or category analysis.</p></article>
         <article class="panel guide-card"><h3>Who is it for?</h3><ul><li><strong>Ecommerce and trading teams:</strong> identify product priorities and own the weekly review.</li><li><strong>Merchandising and buying:</strong> investigate availability, price and assortment; agree where exposure can grow.</li><li><strong>Marketing:</strong> find candidates for additional visibility and check whether demand converts.</li><li><strong>Digital operations and analytics:</strong> validate tracking and investigate product-page, delivery or fulfilment signals.</li></ul></article>
       </div>
-      <article class="panel guide-card"><h3>How to run your weekly review</h3><ol class="guide-steps"><li><strong>Confirm the data source.</strong> Check the pill at the top. “Live · Cloudflare” is the Worker feed; “Apps Script fallback” is the legacy feed. “Demo” uses sample products and must not be used for trading decisions. Read any feed warning before reviewing.</li><li><strong>Select a market and reporting week.</strong> Start with the latest complete week in the sheet. The newest available week may still be incomplete. Review the Current, Previous and Health baseline labels. With four weeks loaded, the latest week has up to three prior weeks for its baseline.</li><li><strong>Read the topline funnel.</strong> Review item views, ATC rate, conversion and revenue with their WOW changes. Click a KPI tile to see weekly results. Check whether weakness is broad across the market or concentrated in products.</li><li><strong>Open a Product Health status.</strong> Each tile opens up to 50 priority products. Click Meaning for the definition and current market rules. Counts are capped at 50; the tile also indicates the total where there are more products.</li><li><strong>Validate each priority.</strong> Use Open product ↗ to open a matched product in a new tab. Links match the selected market and exact Shopify Item ID; unmatched products remain visible.  Check evidence strength, repeated weakness, volume, the reason and the estimated item gap. Search by Item ID or name, filter view volume and sort columns. Search also shows up to 50 results; low-data products are excluded.</li><li><strong>Agree a concrete action.</strong> Check stock and size coverage, price, promotion, launch timing, page content, delivery and tracking using your other tools. Use Add beside a product to record the action, owner, due date and notes.</li><li><strong>Review and follow up.</strong> Update action status next week. Export the Action Tracker CSV to share outcomes. Actions are saved in this browser and are not automatically shared with colleagues or synced across devices.</li></ol></article>
+      <article class="panel guide-card"><h3>How to run your weekly review</h3><ol class="guide-steps"><li><strong>Confirm the data source.</strong> Check the pill at the top. “Live · Cloudflare” is the Worker feed; “Apps Script fallback” is the legacy feed. “Demo” uses sample products and must not be used for trading decisions. Read any feed warning before reviewing. Cloudflare loads small pages and shows progress; performance results appear only after all pages have loaded.</li><li><strong>Select a market and reporting week.</strong> Start with the latest complete week in the sheet. The newest available week may still be incomplete. Review the Current, Previous and Health baseline labels. With four weeks loaded, the latest week has up to three prior weeks for its baseline.</li><li><strong>Read the topline funnel.</strong> Review item views, ATC rate, conversion and revenue with their WOW changes. Click a KPI tile to see weekly results. Check whether weakness is broad across the market or concentrated in products.</li><li><strong>Open a Product Health status.</strong> Each tile opens up to 50 priority products. Click Meaning for the definition and current market rules. Counts are capped at 50; the tile also indicates the total where there are more products.</li><li><strong>Validate each priority.</strong> Use Open product ↗ to open a matched product in a new tab. Links match the selected market and exact Shopify Item ID; unmatched products remain visible.  Check evidence strength, repeated weakness, volume, the reason and the estimated item gap. Search by Item ID or name, filter view volume and sort columns. Search also shows up to 50 results; low-data products are excluded.</li><li><strong>Agree a concrete action.</strong> Check stock and size coverage, price, promotion, launch timing, page content, delivery and tracking using your other tools. Use Add beside a product to record the action, owner, due date and notes.</li><li><strong>Review and follow up.</strong> Update action status next week. Export the Action Tracker CSV to share outcomes. Actions are saved in this browser and are not automatically shared with colleagues or synced across devices.</li></ol></article>
       <article class="panel guide-card"><h3>What each status means</h3><div class="guide-table-wrap"><table class="guide-table"><thead><tr><th>Status</th><th>What it suggests</th><th>First review</th></tr></thead><tbody>
         <tr><td>Top Performer</td><td>Meaningful demand and strong conversion relative to the market.</td><td>Protect availability and assess additional exposure.</td></tr>
         <tr><td>Hidden Gem</td><td>Strong conversion with less visibility than the market median.</td><td>Test more exposure and monitor the result.</td></tr>
@@ -625,20 +625,80 @@
     function notice(msg){$('notice').textContent=msg;$('notice').classList.toggle('show',!!msg)}
     function populateWeeks(indexReady=false){if(!indexReady)buildDataIndex();const weeks=[...state.weekList].sort((a,b)=>b-a),select=$('weekSelect');select.innerHTML=weeks.map(w=>`<option value="${w}">Week ${w}</option>`).join('');select.disabled=!weeks.length;state.week=weeks[0]??null;select.value=state.week;setPreviousWeek();}
     function setPreviousWeek(){const weeks=state.weekList,i=weeks.indexOf(Number(state.week));state.previousWeek=i>0?weeks[i-1]:null;$('currentWeekLabel').textContent=state.week!==null?'Week '+state.week:'—';$('previousWeekLabel').textContent=state.previousWeek!==null?'Week '+state.previousWeek:'Not available'}
-    async function fetchWorkerCsv(market,signal){
-      const weekRes=await fetch(`${WORKER}/api/weeks?market=${encodeURIComponent(market)}`,{cache:'no-store',signal});
-      if(!weekRes.ok)throw new Error(`Worker weeks request returned HTTP ${weekRes.status}`);
-      const weekPayload=await weekRes.json();
-      const weeks=Array.isArray(weekPayload.weeks)?weekPayload.weeks.map(Number).filter(Number.isFinite):[];
-      if(!weeks.length)throw new Error('Worker returned no available weeks');
-      // The dashboard only needs the latest four data weeks: the current
-      // week plus the three preceding weeks for WOW and market comparison.
-      // Limiting the request prevents the Worker exceeding its memory limit
-      // when the source sheet contains a long product history.
-      const requestedWeeks=weeks.sort((a,b)=>a-b).slice(-4);
-      const dataRes=await fetch(`${WORKER}/api/products?market=${encodeURIComponent(market)}&weeks=${requestedWeeks.join(',')}&format=csv`,{cache:'no-store',signal});
-      if(!dataRes.ok)throw new Error(`Worker product request returned HTTP ${dataRes.status}`);
-      return dataRes.text();
+    function waitForRetry(ms,signal){
+      return new Promise((resolve,reject)=>{
+        if(signal.aborted)return reject(new DOMException('Aborted','AbortError'));
+        const abort=()=>{clearTimeout(timer);reject(new DOMException('Aborted','AbortError'))};
+        const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve()},ms);
+        signal.addEventListener('abort',abort,{once:true});
+      });
+    }
+    async function fetchWorkerPage(path,signal){
+      for(let attempt=0;attempt<6;attempt++){
+        const res=await fetch(`${WORKER}${path}`,{cache:'no-store',signal});
+        if([429,503].includes(res.status)&&attempt<5){
+          await res.body?.cancel();
+          await waitForRetry(Math.min(32000,2000*2**attempt)+Math.random()*500,signal);continue;
+        }
+        if(!res.ok){let detail='';try{detail=(await res.json()).error||''}catch{}throw new Error(`Worker page returned HTTP ${res.status}${detail?': '+detail:''}`)}
+        return res.json();
+      }
+    }
+    async function fetchWorkerData(market,signal){
+      const runs={},weeks=new Set();let start=2,revision,pageRows;
+      // Discover weeks with bounded scans when the compact week index is cold.
+      while(start!==null){
+        const page=await fetchWorkerPage(`/api/manifest?market=${encodeURIComponent(market)}&start=${start}`,signal);
+        if(page.market!==market||!Array.isArray(page.weeks)||!page.runs||!Number.isInteger(page.pageRows)||page.pageRows<1||page.pageRows>500)throw new Error('Invalid Worker manifest');
+        if(revision&&revision!==page.revision)throw new Error('Sheet metadata changed during loading. Refresh the dashboard.');
+        revision=page.revision;pageRows=page.pageRows;
+        for(const w of page.weeks){if(Number.isInteger(Number(w)))weeks.add(Number(w))}
+        for(const [week,blocks] of Object.entries(page.runs)){
+          if(!Array.isArray(blocks))throw new Error('Invalid Worker week ranges');
+          for(const block of blocks){
+            if(!Number.isInteger(block.start)||!Number.isInteger(block.end)||block.start<2||block.end<block.start||block.end>page.rowCount)throw new Error('Invalid Worker row range');
+            (runs[week]??=[]).push(block);
+          }
+        }
+        const next=page.nextStart;
+        if(next!==null&&(!Number.isInteger(next)||next<=start))throw new Error('Invalid Worker manifest cursor');
+        start=next;
+        if(!signal.aborted)setSource('','Loading '+market+' · checking weeks'+(start===null?'':` · ${fmt(start-2)} rows scanned`));
+      }
+      const requestedWeeks=[...weeks].sort((a,b)=>a-b).slice(-4);
+      if(!requestedWeeks.length)throw new Error('Worker returned no available weeks');
+      const tasks=[];
+      for(const week of requestedWeeks){
+        const merged=[];
+        for(const block of (runs[week]||[]).sort((a,b)=>a.start-b.start)){
+          const last=merged.at(-1);
+          if(last&&block.start<=last.end+1)last.end=Math.max(last.end,block.end);else merged.push({...block});
+        }
+        for(const block of merged)for(let row=block.start;row<=block.end;row+=pageRows)tasks.push({week,start:row,end:Math.min(row+pageRows-1,block.end)});
+      }
+      const weekMaps=new Map();let cursor=0,completed=0,rowCount=0;
+      const loader=async()=>{
+        while(cursor<tasks.length){
+          const task=tasks[cursor++];
+          const page=await fetchWorkerPage(`/api/product-page?market=${encodeURIComponent(market)}&weeks=${task.week}&start=${task.start}&end=${task.end}&revision=${encodeURIComponent(revision)}`,signal);
+          if(page.market!==market||page.revision!==revision||page.start!==task.start||page.end!==task.end||!Array.isArray(page.rows)||page.rows.length>pageRows||!Array.isArray(page.header))throw new Error('Invalid Worker product page');
+          const columns=fieldMap(page.header);
+          if(Object.values(columns).some(i=>i<0))throw new Error('Worker page is missing product columns');
+          for(const raw of page.rows){
+            const id=String(raw[columns.id]??'').trim(),week=weekNum(raw[columns.week]);
+            if(week!==task.week)throw new Error('Worker returned a different week');
+            if(!id)continue;
+            const name=String(raw[columns.name]??'').trim()||'Unnamed product';
+            let products=weekMaps.get(week);if(!products){products=new Map();weekMaps.set(week,products)}
+            const x=products.get(id)||{id,name,views:0,atcs:0,purchases:0,revenue:0};
+            x.views+=num(raw[columns.views]);x.atcs+=num(raw[columns.atcs]);x.purchases+=num(raw[columns.purchases]);x.revenue+=num(raw[columns.revenue]);x.name=name;products.set(id,x);rowCount++;
+          }
+          completed++;if(!signal.aborted)setSource('','Loading '+market+` · ${completed}/${tasks.length} pages`);
+        }
+      };
+      await Promise.all([loader(),loader()]);
+      if(!rowCount)throw new Error('Worker returned no product rows');
+      return {weekMaps,weekList:requestedWeeks.filter(w=>weekMaps.has(w))};
     }
     async function fetchLegacyCsv(market,signal){
       const url=`${LEGACY_DEPLOY}?market=${encodeURIComponent(market)}&key=${encodeURIComponent(KEY)}`;
@@ -649,14 +709,15 @@
     async function loadLive(){
       hideProducts();const btn=$('refreshBtn'),request=++loadSequence,market=state.market;activeLoadController?.abort();const controller=new AbortController();activeLoadController=controller;btn.disabled=true;productLinkCache.clear();setSource('','Loading '+market);notice('');
       try{
-        let text,sourceLabel;
-        try{ text=await fetchWorkerCsv(market,controller.signal); sourceLabel='Live · Cloudflare · '+market; }
+        let text,workerData,sourceLabel;
+        try{ workerData=await fetchWorkerData(market,controller.signal); sourceLabel='Live · Cloudflare · '+market; }
         catch(workerErr){
           if(workerErr.name==='AbortError')throw workerErr;
           console.warn('Cloudflare Worker load failed; trying legacy Apps Script feed.',workerErr);
-          text=await fetchLegacyCsv(market,controller.signal); sourceLabel='Live · Apps Script fallback · '+market;
+          controller.abort();const fallbackController=new AbortController();activeLoadController=fallbackController;
+          text=await fetchLegacyCsv(market,activeLoadController.signal); sourceLabel='Live · Apps Script fallback · '+market;
         }
-        if(request!==loadSequence)return;indexCsv(text);if(request!==loadSequence)return;populateWeeks(true);setSource('live',sourceLabel);compute();
+        if(request!==loadSequence)return;if(workerData){state.weekMaps=workerData.weekMaps;state.weekList=workerData.weekList;state.scoreCache.clear();state.rows=[]}else indexCsv(text);if(request!==loadSequence)return;populateWeeks(true);setSource('live',sourceLabel);compute();
       }catch(err){if(err.name==='AbortError'||request!==loadSequence)return;loadDemo(false);notice(`Live feed unavailable: ${err.message}. Demo data is shown so the report can still be previewed.`)}finally{if(request===loadSequence){btn.disabled=false;activeLoadController=null}}
     }
     function seeded(i,w){const x=Math.sin(i*97+w*13)*10000;return x-Math.floor(x)}
